@@ -41,13 +41,13 @@ on:
       plugins:
         description: '请选择你需要集成的插件 y 表示集成  n 表示不集成'
         required: true
-        default: '{"vpnsvr":"n","vpncli":"n","vpncmd":"n","ss":"y","v2ray":"n","xray":"n","trojan":"n","singbox":"y","naiveproxy":"n","ssobfs":"n","dnsforwarder":"n","adbyby":"n","adguardhome":"n","smartdns":"y","aliddns":"n","zerotier":"n","ddnsto":"n","wireguard":"n","frpc":"n","aldrive":"n","sqm":"n","mentohust":"n","scutclient":"n","njitclient":"n","minieap":"n","dogcom":"n","transmission":"n","aria":"n","ariaweb":"n"}'
+        default: '{"vpnsvr":"n","vpncli":"n","vpncmd":"n","ss":"y","v2ray":"n","xray":"y","trojan":"n","singbox":"n","naiveproxy":"n","ssobfs":"n","dnsforwarder":"n","adbyby":"n","adguardhome":"n","smartdns":"y","aliddns":"n","zerotier":"n","ddnsto":"n","wireguard":"n","frpc":"n","aldrive":"n","sqm":"n","mentohust":"n","scutclient":"n","njitclient":"n","minieap":"n","dogcom":"n","transmission":"n","aria":"n","ariaweb":"n"}'
       firmwarever:
         description: '自定义固件版本号，默认为当天编译日期'
         required: false
         default: ''
 env:
-  REPOSITORY_URL: https://github.com/tsl0922/padavan.git #https://github.com/fightroad/padavan.git
+  REPOSITORY_URL: https://github.com/tsl0922/padavan.git
   WORK_PATH: /opt/padavan-4.4
   TIME_ZONE: Asia/Shanghai
   FIRMWARE_DATEPREFIX: $(date +"%Y%m%d")
@@ -237,6 +237,8 @@ jobs:
         ################################################################################################
         #因不同型号配置功能不一样，所以先把配置项删除，如果你自己要添加其他的，也要写上删除这一条，切记！！！
         ################################################################################################
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_SFE/d' .config #删除配置项SFE
+        sed -i '/CONFIG_FIRMWARE_ENABLE_IPV6/d' .config #删除配置项IPV6
         sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_SERVER/d' .config #删除配置项SOFTETHERVPN
         sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CLIENT/d' .config #删除配置项SOFTETHERVPN
         sed -i '/CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CMD/d' .config #删除配置项SOFTETHERVPN   
@@ -275,6 +277,8 @@ jobs:
         ######################################################################
         #以下选项是定义你需要的功能（y=集成,n=忽略），重新写入到.config文件
         ######################################################################
+        echo "CONFIG_FIRMWARE_INCLUDE_SFE=y" >> .config #sfe加速
+        echo "CONFIG_FIRMWARE_ENABLE_IPV6=n" >> .config #ipv6
         echo "CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_SERVER=${{env.vpnsvr}}" >> .config #SOFTETHERVPN
         echo "CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CLIENT=${{env.vpncli}}" >> .config #SOFTETHERVPN
         echo "CONFIG_FIRMWARE_INCLUDE_SOFTETHERVPN_CMD=${{env.vpncmd}}" >> .config #SOFTETHERVPN
@@ -364,6 +368,10 @@ jobs:
         sed -i 's|-fvisibility=hidden|-fvisibility=hidden -I\$(ROOTDIR)/stage/include/libxml2|g' ./trunk/user/aria2/Makefile
         sed -i 's|-static-libstdc++|-static-libstdc++ -L\$(ROOTDIR)/stage/lib|g'  ./trunk/user/aria2/Makefile
         sed -i 's|--prefix=/usr|--prefix=/usr CXXFLAGS="\$(CFLAGS)"|g' ./trunk/user/aria2/Makefile
+        #修改smartdns
+        smartdns_tag="$( curl -L --connect-timeout 3 -s  https://api.github.com/repos/pymumu/smartdns/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 | tr -d 'v')"
+        sed -i "s/^\(PKG_VERSION:=\).*/\1$smartdns_tag/g" ./trunk/user/smartdns/Makefile
+        sed -i "s/^\(PKG_HASH:=\).*/\1skip/g" ./trunk/user/smartdns/Makefile
         
         echo "开始编译${{ env.model }}"
         sudo make ${{ env.model }} TOOLCHAIN=mipsel-linux-musl
