@@ -47,7 +47,7 @@ on:
         required: false
         default: ''
 env:
-  REPOSITORY_URL: https://github.com/fightroad/padavan.git #https://github.com/tsl0922/padavan.git
+  REPOSITORY_URL: https://github.com/tsl0922/padavan.git #https://github.com/fightroad/padavan.git
   WORK_PATH: /opt/padavan-4.4
   TIME_ZONE: Asia/Shanghai
   FIRMWARE_DATEPREFIX: $(date +"%Y%m%d")
